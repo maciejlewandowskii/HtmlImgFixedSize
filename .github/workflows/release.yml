@@ -22,6 +22,7 @@ jobs:
         uses: blkerby/rust-build.action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BINARIES: HtmlImgFixedSize
         with:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
