@@ -2,6 +2,7 @@
 name = "HtmlImgFixedSize"
 version = "0.1.0"
 edition = "2024"
+authors = ["Maciej Lewandowski <dev@web-dream.tech>"]
 
 [dependencies]
 imageinfo = "0.7.27"
