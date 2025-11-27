@@ -1,21 +1,55 @@
+name: Release
+
+permissions:
+  contents: write
+
 on:
   release:
     types: [created]
 
 jobs:
-  release:
-    name: release ${{ matrix.target }}
-    runs-on: ubuntu-latest
+  upload-assets:
+    name: Release for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl]
+        include:
+          # Linux (Static / Musl) - Replaces the old action's default
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          # Windows
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          # macOS
+          - target: aarch64-apple-darwin
+            os: macos-latest
+
     steps:
-      - uses: actions/checkout@master
-      - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install the latest Rust stable (Fully supports Edition 2024)
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: "README.md LICENSE"
+          targets: ${{ matrix.target }}
+
+      # Install 'cross' for static Linux builds (musl)
+      - name: Install Cross
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        uses: taiki-e/install-action@cross
+
+      # Build, Zip, and Upload to the Release
+      - name: Build and Upload Asset
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: HtmlImgFixedSize
+          
+          target: ${{ matrix.target }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use 'cross' for musl builds, standard 'cargo' for others
+          build-tool: ${{ matrix.target == 'x86_64-unknown-linux-musl' && 'cross' || 'cargo' }}
+          # Archive settings (matches the old action's behavior)
+          tar: unix
+          zip: windows
